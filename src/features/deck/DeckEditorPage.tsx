@@ -8,23 +8,55 @@ const DeckEditorPage: React.FC = () => {
   const [deckName, setDeckName] = useState("");
   const [cards, setCards] = useState<Flashcard[]>([]);
 
-  const addCard = () => {
-    setCards([...cards, { id: uuid(), front: "", back: "", image: "" }]);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [newFront, setNewFront] = useState("");
+  const [newBack, setNewBack] = useState("");
+  const [newImage, setNewImage] = useState("");
+
+  const [editingCard, setEditingCard] = useState<Flashcard | null>(null);
+
+  const openAddDialog = () => {
+    setEditingCard(null); // not editing, adding new
+    setNewFront("");
+    setNewBack("");
+    setNewImage("");
+    setIsDialogOpen(true);
   };
 
-  const updateCard = (id: string, front: string, back: string) => {
-    setCards((prev) =>
-      prev.map((card) => (card.id === id ? { ...card, front, back } : card))
-    );
+  const openEditDialog = (card: Flashcard) => {
+    setEditingCard(card);
+    setNewFront(card.front);
+    setNewBack(card.back);
+    setNewImage(card.image || "");
+    setIsDialogOpen(true);
   };
 
-  const uploadImage = async (file: File, cardId: string) => {
+  const handleImageUpload = async (file: File) => {
     const base64 = await readFileAsBase64(file);
-    setCards((prev) =>
-      prev.map((card) =>
-        card.id === cardId ? { ...card, image: base64 } : card
-      )
-    );
+    setNewImage(base64);
+  };
+
+  const createOrUpdateCard = () => {
+    if (editingCard) {
+      // Update existing card
+      setCards((prev) =>
+        prev.map((card) =>
+          card.id === editingCard.id
+            ? { ...card, front: newFront, back: newBack, image: newImage }
+            : card
+        )
+      );
+    } else {
+      // Add new card
+      const newCard: Flashcard = {
+        id: uuid(),
+        front: newFront,
+        back: newBack,
+        image: newImage,
+      };
+      setCards((prev) => [...prev, newCard]);
+    }
+    setIsDialogOpen(false);
   };
 
   const saveDeck = () => {
@@ -33,54 +65,142 @@ const DeckEditorPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col gap-3 bg-white p-2 rounded shadow-2xs w-full items-center">
-      <h2 className="text-2xl">Create a Deck</h2>
-      <input
-        value={deckName}
-        onChange={(e) => setDeckName(e.target.value)}
-        placeholder="Deck Name"
-        className=""
-      />
-      <button
-        className="cursor-pointer bg-blue-400 rounded-2xl p-2 w-2xs"
-        onClick={addCard}
-      >
-        Add Card
-      </button>
+    <div className="flex flex-col gap-3 p-2 w-[80%] items-center">
+      <div className="flex gap-3 bg-white p-2 rounded shadow-2xs w-full">
+        <input
+          value={deckName}
+          onChange={(e) => setDeckName(e.target.value)}
+          placeholder="Deck Name"
+          className="p-2 border rounded"
+        />
+        <button
+          className="cursor-pointer bg-blue-400 text-white rounded p-2"
+          onClick={openAddDialog}
+        >
+          Add Card
+        </button>
+        <button
+          className="bg-blue-400 text-white rounded p-2"
+          onClick={saveDeck}
+        >
+          Save to File
+        </button>
+      </div>
 
-      {cards.map((card) => (
-        <div key={card.id}>
-          <input
-            value={card.front}
-            onChange={(e) => updateCard(card.id, e.target.value, card.back)}
-            placeholder="Front"
-          />
-          <input
-            value={card.back}
-            onChange={(e) => updateCard(card.id, card.front, e.target.value)}
-            placeholder="Back"
-          />
-          <input
-            type="file"
-            id="image-upload"
-            accept="image/*"
-            onChange={(e) =>
-              e.target.files && uploadImage(e.target.files[0], card.id)
-            }
-            className="hidden"
-          />
-          <label
-            htmlFor="image-upload"
-            className="cursor-pointer text-center bg-blue-400 rounded-2xl p-2 w-2xs"
+      {/* Display cards */}
+      <div className="flex flex-wrap gap-3 justify-start w-full">
+        {cards.map((card) => (
+          <div
+            key={card.id}
+            className="flex flex-col bg-white shadow-2xs gap-2 p-4 rounded w-64 relative"
           >
-            Image Upload
-          </label>
-          {card.image && <img src={card.image} height={80} />}
+            <div>
+              <label className="text-sm font-semibold">Front:</label>
+              <div className="bg-gray-100 p-2 rounded">{card.front}</div>
+            </div>
+            <div>
+              <label className="text-sm font-semibold">Back:</label>
+              <div className="bg-gray-100 p-2 rounded">{card.back}</div>
+            </div>
+            {card.image && (
+              <div>
+                <label className="text-sm font-semibold">Image:</label>
+                <a
+                  href={card.image}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 underline"
+                >
+                  View Image
+                </a>
+              </div>
+            )}
+
+            <button
+              onClick={() => openEditDialog(card)}
+              className="text-sm bg-gray-200 rounded"
+            >
+              Edit
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {/* Modal Dialog */}
+      {isDialogOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-xs">
+          <div className="bg-white p-6 rounded shadow-lg w-full max-w-md">
+            <h2 className="text-xl font-semibold mb-4">
+              {editingCard ? "Edit Card" : "Add New Card"}
+            </h2>
+
+            <input
+              value={newFront}
+              onChange={(e) => setNewFront(e.target.value)}
+              placeholder="Front"
+              className="mb-3 p-2 border rounded w-full"
+            />
+            <input
+              value={newBack}
+              onChange={(e) => setNewBack(e.target.value)}
+              placeholder="Back"
+              className="mb-3 p-2 border rounded w-full"
+            />
+
+            {newImage ? (
+              <div className="mb-2">
+                <a
+                  href={newImage}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 underline"
+                >
+                  View Uploaded Image
+                </a>
+                <button
+                  onClick={() => setNewImage("")}
+                  className="ml-3 text-red-500 text-sm"
+                >
+                  Remove
+                </button>
+              </div>
+            ) : (
+              <>
+                <input
+                  type="file"
+                  id="new-image-upload"
+                  accept="image/*"
+                  onChange={(e) =>
+                    e.target.files && handleImageUpload(e.target.files[0])
+                  }
+                  className="hidden"
+                />
+                <label
+                  htmlFor="new-image-upload"
+                  className="cursor-pointer bg-blue-400 text-white rounded p-2 inline-block text-sm"
+                >
+                  Upload Image
+                </label>
+              </>
+            )}
+
+            <div className="flex justify-end mt-4 gap-2">
+              <button
+                onClick={() => setIsDialogOpen(false)}
+                className="bg-gray-300 rounded px-4 py-2"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={createOrUpdateCard}
+                className="bg-blue-500 text-white rounded px-4 py-2"
+              >
+                {editingCard ? "Update Card" : "Create Card"}
+              </button>
+            </div>
+          </div>
         </div>
-      ))}
-      <button className="bg-blue-400 rounded-2xl p-2 w-2xs" onClick={saveDeck}>
-        Save to File
-      </button>
+      )}
     </div>
   );
 };

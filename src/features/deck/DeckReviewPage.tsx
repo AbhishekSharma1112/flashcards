@@ -1,18 +1,17 @@
 import { useState } from "react";
+import { useDeckContext } from "../../context/DeckContext";
 import { useRoute } from "wouter";
-import type { Deck } from "../../Types";
-
-// Placeholder state; should be passed/shared across app
-const MOCK_DECKS: Deck[] = [];
 
 const DeckReviewPage = () => {
-  const [match, params] = useRoute("/deck/:deckId");
-  const deck = MOCK_DECKS.find((d) => d.id === params?.deckId);
+  const { decks } = useDeckContext();
+  const [, params] = useRoute("/deck/:deckId");
 
+  const deck = decks.find((d) => d.id === params?.deckId);
   const [index, setIndex] = useState(0);
   const [showBack, setShowBack] = useState(false);
 
-  if (!deck) return <p>Deck not found</p>;
+  if (!deck)
+    return <p className="text-center mt-10 text-red-500">Deck not found</p>;
 
   const card = deck.cards[index];
 
@@ -23,26 +22,58 @@ const DeckReviewPage = () => {
     }
   };
 
+  const restart = () => {
+    setIndex(0);
+    setShowBack(false);
+  };
+
   return (
-    <div>
-      <h2>{deck.name}</h2>
-      <p>
-        Card {index + 1} of {deck.cards.length}
-      </p>
-      <div>
-        {card.image && <img src={card.image} alt="flashcard" height={100} />}
-        <h3>{showBack ? card.back : card.front}</h3>
+    <div className="max-w-full mx-auto px-4 py-8">
+      <h2 className="text-3xl font-bold mb-4 text-center">{deck.name}</h2>
+      <div className="bg-white border rounded-xl shadow-md p-6 text-center space-y-4">
+        {card.image && (
+          <img
+            src={card.image}
+            alt="flashcard"
+            className="mx-auto max-h-64 object-contain rounded"
+          />
+        )}
+        <h3 className="text-xl font-semibold">
+          {showBack ? card.back : card.front}
+        </h3>
+
         {!showBack ? (
-          <button onClick={() => setShowBack(true)}>See Answer</button>
+          <button
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+            onClick={() => setShowBack(true)}
+          >
+            See Answer
+          </button>
         ) : (
-          <button onClick={nextCard}>Next</button>
+          <>
+            {index < deck.cards.length - 1 ? (
+              <button
+                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition"
+                onClick={nextCard}
+              >
+                Next
+              </button>
+            ) : (
+              <div className="space-x-2">
+                <button
+                  className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition"
+                  onClick={restart}
+                >
+                  Restart
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
-      {index === deck.cards.length - 1 && showBack && (
-        <>
-          <button onClick={() => setIndex(0)}>Restart</button>
-        </>
-      )}
+      <p className="text-center text-gray-500 mt-6">
+        Card {index + 1} of {deck.cards.length}
+      </p>
     </div>
   );
 };

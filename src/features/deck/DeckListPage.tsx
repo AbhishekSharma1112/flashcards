@@ -1,12 +1,11 @@
-import React, { useState } from "react";
+import React from "react";
 import { Link } from "wouter";
 import { loadDeckFile } from "../../lib/storage";
-import type { Deck } from "../../Types";
 import { navigate } from "wouter/use-browser-location";
+import { useDeckContext } from "../../context/DeckContext";
 
 const DeckListPage: React.FC = () => {
-  const [decks, setDecks] = useState<Deck[] | null>(null);
-
+  const { decks, setDecks } = useDeckContext();
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -19,9 +18,9 @@ const DeckListPage: React.FC = () => {
     }
   };
 
-  if (!decks) {
+  if (!decks || decks.length <= 0) {
     return (
-      <div className=" bg-white p-2 rounded shadow-2xs w-full">
+      <div className=" bg-white p-2 rounded shadow-2xs w-[80%]">
         <h2 className="text-2xl text-center">Import Flashcard Deck</h2>
         <div className="flex flex-col m-3 gap-2 items-center">
           <input
@@ -49,18 +48,20 @@ const DeckListPage: React.FC = () => {
   }
 
   return (
-    <div>
-      <h2>Your Decks</h2>
-      <ul>
+    <div className="flex flex-col bg-white w-[80%] items-center h-[80%] min-h-[80%]">
+      <h2 className="text-2xl">Your Decks</h2>
+      <ul className="flex gap-3 mt-4">
         {decks.map((deck) => (
-          <li key={deck.id}>
+          <li key={deck.id} className="border rounded shadow-2xs">
             <Link href={`/deck/${deck.id}`}>
               {deck.name} ({deck.cards.length} cards)
             </Link>
           </li>
         ))}
+        <li>
+          <Link href="/edit">Create New Deck</Link>
+        </li>
       </ul>
-      <Link href="/edit">+ Create New Deck</Link>
     </div>
   );
 };
