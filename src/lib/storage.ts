@@ -1,19 +1,19 @@
 import type { Deck } from "../Types";
+import { v4 as uuidv4 } from "uuid";
 
-export const loadDeckFile = (file: File): Promise<Deck[]> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const decks = JSON.parse(event.target?.result as string);
-        resolve(decks);
-      } catch (err) {
-        reject("Invalid JSON file");
-      }
-    };
-    reader.onerror = () => reject("File read error");
-    reader.readAsText(file);
-  });
+export const loadDeckFile = async (file: File): Promise<Deck[]> => {
+  const text = await file.text();
+  const json = JSON.parse(text);
+
+  // Normalize to array
+  const decks: Deck[] = Array.isArray(json) ? json : [json];
+
+  // Ensure each deck has an ID
+  return decks.map((deck) => ({
+    id: deck.id || uuidv4(),
+    name: deck.name || "Untitled Deck",
+    cards: deck.cards || [],
+  }));
 };
 
 export const saveDecksToFile = (decks: Deck[]) => {

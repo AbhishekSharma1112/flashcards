@@ -1,17 +1,33 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { getAllDecks, saveDeck } from "../lib/indexedDb";
 import type { Deck } from "../Types";
 
-type DeckContextType = {
+const DeckContext = createContext<{
   decks: Deck[];
   setDecks: (decks: Deck[]) => void;
-};
-
-const DeckContext = createContext<DeckContextType | null>(null);
+}>({
+  decks: [],
+  setDecks: () => {},
+});
 
 export const DeckProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [decks, setDecks] = useState<Deck[]>([]);
+  const [decks, setDecksState] = useState<Deck[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      const loaded = await getAllDecks();
+      setDecksState(loaded);
+    })();
+  }, []);
+
+  const setDecks = async (newDecks: Deck[]) => {
+    setDecksState(newDecks);
+    for (const deck of newDecks) {
+      await saveDeck(deck);
+    }
+  };
 
   return (
     <DeckContext.Provider value={{ decks, setDecks }}>
@@ -20,8 +36,4 @@ export const DeckProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 };
 
-export const useDeckContext = () => {
-  const ctx = useContext(DeckContext);
-  if (!ctx) throw new Error("DeckContext must be used inside DeckProvider");
-  return ctx;
-};
+export const useDeckContext = () => useContext(DeckContext);

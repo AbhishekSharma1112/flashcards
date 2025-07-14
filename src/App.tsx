@@ -11,14 +11,12 @@ function App() {
             <li>
               <Link href="/">Deck</Link>
             </li>
-            <li>
-              <Link href="/settings">Settings</Link>
-            </li>
+            <li>Dark</li>
           </ul>
         </nav>
       </header>
 
-      <main className="min-h-screen h-[100%] bg-gray-100 flex flex-col items-center p-2 w-full max-w-full">
+      <main className=" h-screen bg-gray-100 flex flex-col items-center p-2 w-full max-w-full">
         <Router />
       </main>
     </>
